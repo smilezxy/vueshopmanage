@@ -10,15 +10,16 @@
                 <el-input v-model="form.username" placeholder="账户" prefix-icon="el-icon-tickets"></el-input>
             </el-form-item>
             <el-form-item prop="password">
-                <el-input v-model="form.password" placeholder="密码" prefix-icon="el-icon-tickets"></el-input>
+                <el-input v-model="form.password" placeholder="密码" prefix-icon="el-icon-tickets" type="password"></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" class="login-btn">登录</el-button>
+              <el-button type="primary" class="login-btn" @click="loginSubmit('form')">登录</el-button>
             </el-form-item>
         </el-form>
     </div>
 </template>
 <script>
+import {checkUser} from '@/api/index.js'
 export default {
   data () {
     return {
@@ -34,6 +35,20 @@ export default {
           {required: true, message: '请输入密码', trigger: 'blur'}
         ]
       }
+    }
+  },
+  methods: {
+    loginSubmit (formName) {
+      this.$refs[formName].validate(valide => {
+        // 只有校验通过才执行函数
+        if (valide) {
+          checkUser(this.form).then(res => {
+            console.log(res)
+          })
+        } else {
+          console.log('不通过')
+        }
+      })
     }
   }
 }
