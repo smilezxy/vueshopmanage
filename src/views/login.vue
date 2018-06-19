@@ -42,8 +42,17 @@ export default {
       this.$refs[formName].validate(valide => {
         // 只有校验通过才执行函数
         if (valide) {
-          checkUser(this.form).then(res => {
-            console.log(res)
+          checkUser([this.form.username, this.form.password]).then(res => {
+            // 如果成功要跳转
+            if (res.code == 0) {
+              this.$router.push({name: 'Home'})
+            } else {
+            // 如果失败展示提示信息
+              this.$message({
+                type: 'error',
+                message: res.message
+              })
+            }
           })
         } else {
           console.log('不通过')
