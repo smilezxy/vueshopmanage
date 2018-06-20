@@ -17,7 +17,7 @@ router.beforeEach((to, from, next) => {
     next()
   } else {
     // 如果没有登录，就去登录页面
-    if (to.Path !== '/login') {
+    if (to.path !== '/login') {
       next({path: '/login'})
     } else {
     // 正好访问的login页面

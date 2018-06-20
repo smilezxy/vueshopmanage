@@ -44,7 +44,7 @@ export default {
         if (valide) {
           checkUser([this.form.username, this.form.password]).then(res => {
             // 如果成功要跳转
-            if (res.code === 0) {
+            if (res.code === '0') {
               localStorage.setItem('mytoken', res.data)
               this.$router.push({name: 'Home'})
             } else {
