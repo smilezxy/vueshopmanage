@@ -21,3 +21,8 @@ export const checkUser = params => {
 export const getUserList = params => {
   return axios.get('users', params).then(res => res.data)
 }
+// 更改用户状态
+export const changeUserState = params => {
+  // es6的模板字符串
+  return axios.put(`users/${params.uid}/state/${params.type}`).then(res => res.data)
+}
