@@ -18,7 +18,7 @@
           <el-button type="success" plain @click="addDialogFormVisible = true">添加用户</el-button>
         </el-col>
       </el-row>
-      <el-table :data="userList" style="width: 100%">
+      <el-table v-loading="loading" :data="userList" style="width: 100%" class="margin-20">
         <el-table-column  type="index"  width="50">
         </el-table-column>
         <el-table-column  prop="username"  label="姓名" width="180">
@@ -36,8 +36,8 @@
         <el-table-column label="操作">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" icon="el-icon-edit" plain @click="showEditDialog(scope.row)"></el-button>
-            <el-button size="mini" type="danger" icon="el-icon-delete" plain></el-button>
-            <el-button size="mini" type="warning" icon="el-icon-check" plain></el-button>
+            <el-button size="mini" type="danger" icon="el-icon-delete" plain @click="showDeleteDialog(scope.row)"></el-button>
+            <el-button size="mini" type="warning" icon="el-icon-check" plain  @click="showGrantDialog(scope.row)"></el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -91,13 +91,32 @@
           <el-button type="primary" @click="editUserSubmit('editUserForm')">确 定</el-button>
         </div>
       </el-dialog>
+       <!-- 用户分配角色对话框 -->
+      <el-dialog title="分配角色" :visible.sync="grantDialogFormVisible">
+        <el-form :model="grantForm" label-width="120px">
+          <el-form-item label="当前的用户：" prop="username">
+            <!-- <el-input v-model="grantForm.username" auto-complete="off" :disabled="true"></el-input> -->
+            <el-tag type="info">{{grantForm.username}}</el-tag>
+          </el-form-item>
+          <el-form-item label="请选择角色：">
+            <el-select v-model="roleId" placeholder="请选择角色">
+              <el-option v-for="(role,index) in roleList" :key="index" :label="role.roleName" :value="role.id"></el-option>
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="grantDialogFormVisible = false">取 消</el-button>
+          <el-button type="primary" @click="grantUserSubmit()">确 定</el-button>
+        </div>
+      </el-dialog>
     </div>
 </template>
 <script>
-import {getUserList, changeUserState, addUser, getUserById, editUser} from '@/api/index.js'
+import {getUserList, changeUserState, addUser, getUserById, editUser, deleteUser, getRoleList, grantUserRole} from '@/api/index.js'
 export default {
   data () {
     return {
+      loading: true,
       userList: [],
       value3: '',
       query: '',
@@ -118,6 +137,10 @@ export default {
         mobile: '',
         id: 0
       },
+      grantDialogFormVisible: false,
+      grantForm: {},
+      roleList: [],
+      roleId: '',
       // 添加用户的表单验证
       rules: {
         username: [
@@ -152,10 +175,14 @@ export default {
     },
     // 初始化表格数据
     initList () {
+      this.loading = true
       getUserList({params: {query: this.query, pagenum: this.pagenum, pagesize: this.pagesize}}).then(res => {
         // console.log(res)
-        this.userList = res.data.users
-        this.total = res.data.total
+        if (res.meta.status === 200) {
+          this.userList = res.data.users
+          this.total = res.data.total
+          this.loading = false
+        }
       })
     },
     // 改变用户状态
@@ -227,12 +254,73 @@ export default {
           })
         }
       })
+    },
+    // 显示删除对话框
+    showDeleteDialog (row) {
+      this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 执行删除用户操作
+        deleteUser(row.id).then(res => {
+          if (res.meta.status === 200) {
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            })
+            this.initList()
+          }
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
+      })
+    },
+    // 显示分配角色对话框
+    showGrantDialog (row) {
+      this.grantForm = row
+      this.grantDialogFormVisible = true
+      getRoleList().then(res => {
+        if (res.meta.status === 200) {
+          this.roleList = res.data
+        }
+      })
+    },
+    // 分配角色
+    grantUserSubmit () {
+      if (!this.roleId) {
+        this.$message({
+          type: 'warning',
+          message: '角色不能为空，请选择'
+        })
+      } else {
+        grantUserRole({id: this.grantForm.id, rid: this.roleId}).then(res => {
+          if (res.meta.status === 200) {
+            this.$message({
+              type: 'success',
+              message: '设置角色成功'
+            })
+            this.grantDialogFormVisible = false
+          } else {
+            this.$message({
+              type: 'error',
+              message: res.meta.msg
+            })
+          }
+        })
+      }
     }
   }
 }
 </script>
 <style lang="scss" scoped>
 .user {
+  .margin-20 {
+    margin: 20px 0;
+  }
   .search-input {
     width: 300px;
   }
