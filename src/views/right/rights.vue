@@ -47,6 +47,7 @@ export default {
   created () {
     this.loading = true
     getRightList({type: 'list'}).then(res => {
+      console.log(res)
       if (res.meta.status === 200) {
         this.rightList = res.data
         this.loading = false

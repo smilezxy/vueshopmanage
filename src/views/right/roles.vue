@@ -15,22 +15,25 @@
         <template slot-scope="scope">
           <el-row v-for="firstChildren in scope.row.children" :key="firstChildren.id">
             <el-col :span="4">
-              <el-tag closable>{{firstChildren.authName}}</el-tag>
+              <el-tag closable @close="deleteRight(scope.row, firstChildren.id)">{{firstChildren.authName}}</el-tag>
               <i class="el-icon-arrow-right" v-if="firstChildren.children.length != 0"></i>
             </el-col>
             <el-col :span="20">
-              <el-row v-for="secondChildren in firstChildren" :key="secondChildren.id">
+              <el-row v-for="secondChildren in firstChildren.children" :key="secondChildren.id">
                 <el-col :span="4">
-                  <el-tag closable type="success">{{secondChildren.authName}}</el-tag>
+                  <el-tag closable type="success" @close="deleteRight(scope.row, secondChildren.id)">{{secondChildren.authName}}</el-tag>
                   <i class="el-icon-arrow-right" v-if="secondChildren.children.length != 0"></i>
                 </el-col>
                 <el-col :span="20">
-                  <el-tag closable type="warning" v-for="thirdChildren in secondChildren.children" :key="thirdChildren.id">
+                  <el-tag closable type="warning"  v-for="thirdChildren in secondChildren.children" :key="thirdChildren.id"  @close="deleteRight(scope.row, thirdChildren.id)">
                     {{thirdChildren.authName}}
                   </el-tag>
                 </el-col>
               </el-row>
             </el-col>
+          </el-row>
+          <el-row v-if="scope.row.children.length === 0">
+            <el-col :span="24">该角色没有分配用户权限，请前往分配！</el-col>
           </el-row>
         </template>
       </el-table-column>
@@ -42,26 +45,111 @@
         <template slot-scope="scope">
           <el-button size="mini" type="primary" icon="el-icon-edit" plain></el-button>
           <el-button size="mini" type="danger" icon="el-icon-delete" plain></el-button>
-          <el-button size="mini" type="warning" icon="el-icon-check" plain></el-button>
+          <el-button size="mini" type="warning" icon="el-icon-check" plain title="授权角色" @click="showDialog(scope.row)"></el-button>
         </template>
       </el-table-column>
     </el-table>
+    <el-dialog title="授权角色" :visible.sync="dialogFormVisible">
+      <div class="treeContainer">
+        <el-tree
+          :data="rightsList"
+          show-checkbox
+          ref="tree"
+          node-key="id"
+          :default-expand-all="true"
+          :default-checked-keys="selectedRights"
+          :props="defaultProps">
+        </el-tree>
+      </div>
+    <div slot="footer" class="dialog-footer">
+      <el-button @click="dialogFormVisible = false">取 消</el-button>
+      <el-button type="primary" @click="submitGrant">确 定</el-button>
+    </div>
+  </el-dialog>
   </div>
 </template>
 <script>
-import {getRoleList} from '@/api/index.js'
+import {getRoleList, deleteRoleRight, getRightList, grantRoleRight} from '@/api/index.js'
 export default {
   data () {
     return {
-      roleList: []
+      roleList: [],
+      dialogFormVisible: false,
+      rightsList: [],
+      defaultProps: {
+        children: 'children',
+        label: 'authName'
+      },
+      selectedRights: [], // 保存默认选中权限的id
+      currentRole: {}
     }
   },
   created () {
-    getRoleList().then(res => {
-      if (res.meta.status === 200) {
-        this.roleList = res.data
-      }
-    })
+    this.initList()
+  },
+  methods: {
+    initList () {
+      getRoleList().then(res => {
+        if (res.meta.status === 200) {
+          console.log(res.data)
+          this.roleList = res.data
+        }
+      })
+    },
+    deleteRight (row, rightId) {
+      deleteRoleRight({roleId: row.id, rightId: rightId}).then(res => {
+        if (res.meta.status === 200) {
+          row.children = res.data
+        } else {
+          this.$message({
+            type: 'error',
+            message: res.meta.msg
+          })
+        }
+      })
+    },
+    showDialog (row) {
+      this.dialogFormVisible = true
+      this.currentRole = row
+      getRightList({type: 'tree'}).then(res => {
+        if (res.meta.status === 200) {
+          this.rightsList = res.data
+        } else {
+          this.$message({
+            type: 'error',
+            message: res.meta.msg
+          })
+        }
+      })
+      // 取出当前角色的所有权限  遍历到他的第三个children  取出所有项的id  放进selectedRights中
+      this.selectedRights.length = 0
+      this.currentRole.children.forEach(first => {
+        if (first.children && first.children !== 0) {
+          first.children.forEach(second => {
+            if (second.children && second.children !== 0) {
+              second.children.forEach(third => {
+                this.selectedRights.push(third.id)
+              })
+            }
+          })
+        }
+      })
+    },
+    // 提交授权
+    submitGrant () {
+      let rids = this.$refs.tree.getCheckedKeys().join(',')
+      console.log(rids)
+      grantRoleRight(this.currentRole.id, {rids: rids}).then(res => {
+        if (res.meta.status === 200) {
+          this.$message({
+            type: 'success',
+            message: res.meta.msg
+          })
+          this.dialogFormVisible = false
+          this.initList()
+        }
+      })
+    }
   }
 }
 </script>
@@ -70,6 +158,10 @@ export default {
   .el-tag {
     margin-right: 5px;
     margin-bottom: 5px;
+  }
+  .treeContainer {
+    height: 300px;
+    overflow: auto;
   }
 }
 </style>
