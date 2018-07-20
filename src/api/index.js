@@ -19,7 +19,7 @@ export const checkUser = params => {
 }
 // 获取用户列表
 export const getUserList = params => {
-  return axios.get('users', params).then(res => res.data)
+  return axios.get('users', {params: params}).then(res => res.data)
 }
 // 更改用户状态
 export const changeUserState = params => {
@@ -65,4 +65,12 @@ export const grantRoleRight = (roleId, rids) => {
 // 左侧菜单权限
 export const getMenus = () => {
   return axios.get('menus').then(res => res.data)
+}
+// 获取商品分类信息
+export const getCategories = (params) => {
+  return axios.get('categories', {params: params}).then(res => res.data)
+}
+// 添加分类
+export const addCategories = (params) => {
+  return axios.post('categories', params).then(res => res.data)
 }

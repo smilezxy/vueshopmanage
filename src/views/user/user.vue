@@ -46,8 +46,8 @@
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
         :current-page="1"
-        :page-sizes="[1, 2, 3, 4]"
-        :page-size="1"
+        :page-sizes="[10, 20, 30, 40]"
+        :page-size="10"
         layout="total, sizes, prev, pager, next, jumper"
         :total="total">
         </el-pagination>
@@ -176,7 +176,7 @@ export default {
     // 初始化表格数据
     initList () {
       this.loading = true
-      getUserList({params: {query: this.query, pagenum: this.pagenum, pagesize: this.pagesize}}).then(res => {
+      getUserList({query: this.query, pagenum: this.pagenum, pagesize: this.pagesize}).then(res => {
         // console.log(res)
         if (res.meta.status === 200) {
           this.userList = res.data.users
